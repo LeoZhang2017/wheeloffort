@@ -48,7 +48,7 @@
             font-size: 16px;
             cursor: pointer;
         }
-        
+
         #reset-button {
             position: absolute;
             top: 20px;
@@ -82,7 +82,6 @@
     <button id="reset-button" onclick="resetGame()">Reset Game</button>
 
     <script>
-        // Reorder sections to match the actual wheel layout
         const sections = [
             { text: "$1000", color: "rgb(255, 0, 255)" },   // Top
             { text: "LOSE TURN", color: "rgb(139, 0, 0)" },
@@ -199,14 +198,10 @@
         }
 
         function resetGame() {
-            // Reset score to 0
             score = 0;
             document.getElementById('score').textContent = '$0';
-            
-            // Reset wheel position
             currentAngle = 0;
             drawWheel();
-            
             console.log('Game reset');
         }
 
