@@ -64,14 +64,15 @@
     <button onclick="spinWheel()" id="spinButton">Click to spin the wheel!</button>
 
     <script>
+        // Wheel sections starting from the top position, clockwise
         const sections = [
-            { text: "$500", color: "rgb(255, 140, 0)" },
+            { text: "$300", color: "rgb(0, 255, 255)" },    // Top
+            { text: "$500", color: "rgb(255, 140, 0)" },    // Next clockwise
             { text: "$1000", color: "rgb(255, 0, 255)" },
             { text: "LOSE TURN", color: "rgb(139, 0, 0)" },
             { text: "BANKRUPT", color: "rgb(255, 0, 0)" },
             { text: "$100", color: "rgb(255, 255, 0)" },
-            { text: "$200", color: "rgb(0, 255, 0)" },
-            { text: "$300", color: "rgb(0, 255, 255)" }
+            { text: "$200", color: "rgb(0, 255, 0)" }
         ];
 
         let score = 0;
@@ -85,16 +86,17 @@
         const radius = Math.min(centerX, centerY) - 10;
 
         function drawWheel() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             const sectionAngle = (2 * Math.PI) / sections.length;
             
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
             for (let i = 0; i < sections.length; i++) {
+                // Draw section
                 ctx.beginPath();
                 ctx.moveTo(centerX, centerY);
-                ctx.arc(centerX, centerY, radius, i * sectionAngle + currentAngle, (i + 1) * sectionAngle + currentAngle);
+                ctx.arc(centerX, centerY, radius, 
+                    i * sectionAngle + currentAngle, 
+                    (i + 1) * sectionAngle + currentAngle);
                 ctx.closePath();
-                
                 ctx.fillStyle = sections[i].color;
                 ctx.fill();
                 ctx.strokeStyle = 'white';
@@ -124,37 +126,51 @@
             if (isSpinning) return;
             
             isSpinning = true;
-            const spinButton = document.getElementById('spinButton');
-            spinButton.disabled = true;
+            document.getElementById('spinButton').disabled = true;
             
-            const spins = 5 + Math.random() * 5;
+            const spinAngle = 2 * Math.PI * (5 + Math.random() * 5);
+            const startAngle = currentAngle;
             const duration = 3000;
             const startTime = Date.now();
             
             function animate() {
                 const elapsed = Date.now() - startTime;
-                const progress = elapsed / duration;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Ease out cubic
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                currentAngle = startAngle + (spinAngle * easeOut);
+                
+                drawWheel();
                 
                 if (progress < 1) {
-                    const easedProgress = 1 - Math.pow(1 - progress, 3);
-                    currentAngle = spins * 2 * Math.PI * easedProgress;
-                    drawWheel();
                     requestAnimationFrame(animate);
                 } else {
                     isSpinning = false;
-                    spinButton.disabled = false;
+                    document.getElementById('spinButton').disabled = false;
                     
-                    // Calculate result
-                    const finalAngle = currentAngle % (2 * Math.PI);
+                    // COMPLETELY NEW SECTION DETECTION LOGIC
                     const sectionAngle = (2 * Math.PI) / sections.length;
-                    const sectionIndex = Math.floor(finalAngle / sectionAngle);
-                    const result = sections[sectionIndex];
+                    // Normalize the angle and shift it to align with the pointer at top
+                    let angle = (-currentAngle + Math.PI/2);
+                    // Make sure angle is positive
+                    while (angle < 0) angle += 2 * Math.PI;
+                    // Get the section index
+                    const index = Math.floor((angle / sectionAngle)) % sections.length;
+                    const result = sections[index];
+                    
+                    // Debug info
+                    console.log('Raw angle:', currentAngle * 180 / Math.PI);
+                    console.log('Adjusted angle:', angle * 180 / Math.PI);
+                    console.log('Section:', index);
+                    console.log('Value:', result.text);
                     
                     // Update score
                     if (result.text === "BANKRUPT") {
                         score = 0;
                     } else if (result.text !== "LOSE TURN") {
-                        score += parseInt(result.text.replace("$", ""));
+                        const value = parseInt(result.text.replace("$", ""));
+                        score = value;
                     }
                     
                     document.getElementById('score').textContent = `$${score}`;
