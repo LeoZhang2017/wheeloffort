@@ -64,15 +64,15 @@
     <button onclick="spinWheel()" id="spinButton">Click to spin the wheel!</button>
 
     <script>
-        // Wheel sections starting from the top position, clockwise
+        // Reorder sections to match the actual wheel layout
         const sections = [
-            { text: "$300", color: "rgb(0, 255, 255)" },    // Top
-            { text: "$500", color: "rgb(255, 140, 0)" },    // Next clockwise
-            { text: "$1000", color: "rgb(255, 0, 255)" },
+            { text: "$1000", color: "rgb(255, 0, 255)" },   // Top
             { text: "LOSE TURN", color: "rgb(139, 0, 0)" },
             { text: "BANKRUPT", color: "rgb(255, 0, 0)" },
             { text: "$100", color: "rgb(255, 255, 0)" },
-            { text: "$200", color: "rgb(0, 255, 0)" }
+            { text: "$200", color: "rgb(0, 255, 0)" },
+            { text: "$300", color: "rgb(0, 255, 255)" },
+            { text: "$500", color: "rgb(255, 140, 0)" }
         ];
 
         let score = 0;
@@ -137,43 +137,37 @@
                 const elapsed = Date.now() - startTime;
                 const progress = Math.min(elapsed / duration, 1);
                 
-                // Ease out cubic
-                const easeOut = 1 - Math.pow(1 - progress, 3);
-                currentAngle = startAngle + (spinAngle * easeOut);
-                
-                drawWheel();
-                
                 if (progress < 1) {
+                    const easeOut = 1 - Math.pow(1 - progress, 3);
+                    currentAngle = startAngle + (spinAngle * easeOut);
+                    drawWheel();
                     requestAnimationFrame(animate);
                 } else {
                     isSpinning = false;
                     document.getElementById('spinButton').disabled = false;
                     
-                    // COMPLETELY NEW SECTION DETECTION LOGIC
+                    // Revised section detection
                     const sectionAngle = (2 * Math.PI) / sections.length;
-                    // Normalize the angle and shift it to align with the pointer at top
-                    let angle = (-currentAngle + Math.PI/2);
-                    // Make sure angle is positive
-                    while (angle < 0) angle += 2 * Math.PI;
-                    // Get the section index
-                    const index = Math.floor((angle / sectionAngle)) % sections.length;
+                    let angle = (currentAngle % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+                    const index = Math.floor(angle / sectionAngle);
                     const result = sections[index];
                     
-                    // Debug info
-                    console.log('Raw angle:', currentAngle * 180 / Math.PI);
-                    console.log('Adjusted angle:', angle * 180 / Math.PI);
-                    console.log('Section:', index);
-                    console.log('Value:', result.text);
+                    console.log('Landed on:', result.text);
                     
-                    // Update score
+                    // Strict score update logic
                     if (result.text === "BANKRUPT") {
                         score = 0;
+                        document.getElementById('score').textContent = "$0";
+                        console.log('BANKRUPT - Score reset to 0');
                     } else if (result.text !== "LOSE TURN") {
-                        const value = parseInt(result.text.replace("$", ""));
-                        score = value;
+                        score = parseInt(result.text.replace("$", ""));
+                        document.getElementById('score').textContent = `$${score}`;
+                        console.log('New score:', score);
+                    } else {
+                        console.log('LOSE TURN - Score unchanged:', score);
                     }
                     
-                    document.getElementById('score').textContent = `$${score}`;
+                    drawWheel();
                 }
             }
             
