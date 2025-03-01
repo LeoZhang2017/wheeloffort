@@ -48,6 +48,23 @@
             font-size: 16px;
             cursor: pointer;
         }
+        
+        #reset-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        #reset-button:hover {
+            background-color: #cc0000;
+        }
     </style>
 </head>
 <body>
@@ -62,6 +79,7 @@
     </div>
     
     <button onclick="spinWheel()" id="spinButton">Click to spin the wheel!</button>
+    <button id="reset-button" onclick="resetGame()">Reset Game</button>
 
     <script>
         // Reorder sections to match the actual wheel layout
@@ -146,34 +164,48 @@
                     isSpinning = false;
                     document.getElementById('spinButton').disabled = false;
                     
-                    // Section detection
+                    // Fixed section detection for 12 o'clock position
                     const sectionAngle = (2 * Math.PI) / sections.length;
-                    let angle = (currentAngle % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+                    let angle = (-currentAngle) % (2 * Math.PI);  // Get angle at top
+                    if (angle < 0) angle += 2 * Math.PI;
                     const index = Math.floor(angle / sectionAngle);
                     const result = sections[index];
                     
-                    console.log('Landed on:', result.text);
+                    console.log('Top position angle:', angle * 180 / Math.PI);
+                    console.log('Top section:', index);
+                    console.log('Value at 12 o\'clock:', result.text);
                     
-                    // Fixed score update logic
+                    // Score update logic
                     if (result.text === "BANKRUPT") {
-                        score = 0;
+                        score = 0;  // Reset on bankrupt
                     } else if (result.text === "LOSE TURN") {
-                        // Do nothing - keep the current score
+                        // Keep current score
                         console.log('Lost turn, keeping score at:', score);
                     } else {
-                        // Only update score for money values
-                        score = parseInt(result.text.replace("$", ""));
+                        // Add new value to existing score
+                        const newValue = parseInt(result.text.replace("$", ""));
+                        score += newValue;  // Accumulate instead of replace
+                        console.log('Adding:', newValue, 'New total:', score);
                     }
                     
-                    // Update display
                     document.getElementById('score').textContent = `$${score}`;
-                    console.log('Final score:', score);
-                    
                     drawWheel();
                 }
             }
             
             animate();
+        }
+
+        function resetGame() {
+            // Reset score to 0
+            score = 0;
+            document.getElementById('score').textContent = '$0';
+            
+            // Reset wheel position
+            currentAngle = 0;
+            drawWheel();
+            
+            console.log('Game reset');
         }
 
         // Initial draw
