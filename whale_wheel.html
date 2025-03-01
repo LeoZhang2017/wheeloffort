@@ -146,7 +146,7 @@
                     isSpinning = false;
                     document.getElementById('spinButton').disabled = false;
                     
-                    // Revised section detection
+                    // Section detection
                     const sectionAngle = (2 * Math.PI) / sections.length;
                     let angle = (currentAngle % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
                     const index = Math.floor(angle / sectionAngle);
@@ -154,18 +154,20 @@
                     
                     console.log('Landed on:', result.text);
                     
-                    // Strict score update logic
+                    // Fixed score update logic
                     if (result.text === "BANKRUPT") {
                         score = 0;
-                        document.getElementById('score').textContent = "$0";
-                        console.log('BANKRUPT - Score reset to 0');
-                    } else if (result.text !== "LOSE TURN") {
-                        score = parseInt(result.text.replace("$", ""));
-                        document.getElementById('score').textContent = `$${score}`;
-                        console.log('New score:', score);
+                    } else if (result.text === "LOSE TURN") {
+                        // Do nothing - keep the current score
+                        console.log('Lost turn, keeping score at:', score);
                     } else {
-                        console.log('LOSE TURN - Score unchanged:', score);
+                        // Only update score for money values
+                        score = parseInt(result.text.replace("$", ""));
                     }
+                    
+                    // Update display
+                    document.getElementById('score').textContent = `$${score}`;
+                    console.log('Final score:', score);
                     
                     drawWheel();
                 }
