@@ -164,30 +164,32 @@
                     isSpinning = false;
                     document.getElementById('spinButton').disabled = false;
                     
-                    // Fixed section detection for 12 o'clock position
+                    // Fixed section detection for pointer position
                     const sectionAngle = (2 * Math.PI) / sections.length;
-                    let angle = (-currentAngle) % (2 * Math.PI);  // Get angle at top
+                    let angle = (-currentAngle - Math.PI/2) % (2 * Math.PI);  // Changed to -Math.PI/2
                     if (angle < 0) angle += 2 * Math.PI;
                     const index = Math.floor(angle / sectionAngle);
                     const result = sections[index];
                     
-                    console.log('Top position angle:', angle * 180 / Math.PI);
-                    console.log('Top section:', index);
-                    console.log('Value at 12 o\'clock:', result.text);
+                    // Debug logging
+                    console.log('Final angle:', angle * 180 / Math.PI);
+                    console.log('Section index:', index);
+                    console.log('Value at pointer:', result.text);
                     
                     // Score update logic
                     if (result.text === "BANKRUPT") {
-                        score = 0;  // Reset on bankrupt
+                        score = 0;
                     } else if (result.text === "LOSE TURN") {
                         // Keep current score
                         console.log('Lost turn, keeping score at:', score);
                     } else {
                         // Add new value to existing score
                         const newValue = parseInt(result.text.replace("$", ""));
-                        score += newValue;  // Accumulate instead of replace
+                        score += newValue;
                         console.log('Adding:', newValue, 'New total:', score);
                     }
                     
+                    // Update score display
                     document.getElementById('score').textContent = `$${score}`;
                     drawWheel();
                 }
