@@ -8,59 +8,67 @@
             flex-direction: column;
             align-items: center;
             font-family: Arial, sans-serif;
-            background-color: white;
+            background-color: black;
+            background-image: url('starry_background.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: white;
+            margin: 0;
+            padding: 20px;
         }
         
         #scoreboard {
-            border: 2px solid black;
+            border: 2px solid white;
             padding: 10px;
             margin: 20px;
             width: 150px;
             text-align: left;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 5px;
         }
         
         #wheel-container {
             position: relative;
             width: 400px;
             height: 400px;
-            perspective: 1000px; /* Add 3D perspective */
+            perspective: 1500px;
+            margin-top: 30px;
         }
         
         #wheel {
             width: 100%;
             height: 100%;
-            position: relative;
             transform-style: preserve-3d;
-            transition: transform 0.1s;
+            box-shadow: 0 0 50px rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
         }
         
-        .wheel-section {
+        #wheel-stand {
             position: absolute;
-            width: 120px;  /* Made sections even narrower */
-            height: 200px;
-            left: 140px;   /* Centered based on new width */
-            top: 100px;
-            transform-origin: 50% 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            color: white;
-            font-weight: bold;
-            backface-visibility: hidden;
-            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 40px;
+            background: linear-gradient(to bottom, #555, #222);
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            z-index: -1;
         }
         
         #pointer {
             position: absolute;
-            top: -20px;
+            top: -25px;
             left: 50%;
             transform: translateX(-50%);
             width: 0;
             height: 0;
             border-left: 15px solid transparent;
             border-right: 15px solid transparent;
-            border-top: 30px solid red;
+            border-top: 35px solid #ff0000;
+            filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.7));
+            z-index: 10;
         }
         
         button {
@@ -68,6 +76,14 @@
             padding: 10px 20px;
             font-size: 16px;
             cursor: pointer;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 2px solid white;
+            border-radius: 5px;
+        }
+        
+        button:hover {
+            background-color: rgba(50, 50, 50, 0.7);
         }
 
         #reset-button {
@@ -77,14 +93,14 @@
             padding: 10px 20px;
             font-size: 16px;
             cursor: pointer;
-            background-color: #ff4444;
+            background-color: rgba(255, 68, 68, 0.7);
             color: white;
-            border: none;
+            border: 2px solid white;
             border-radius: 5px;
         }
 
         #reset-button:hover {
-            background-color: #cc0000;
+            background-color: rgba(204, 0, 0, 0.7);
         }
     </style>
 </head>
@@ -96,7 +112,8 @@
     
     <div id="wheel-container">
         <div id="pointer"></div>
-        <div id="wheel"></div>
+        <canvas id="wheel" width="400" height="400"></canvas>
+        <div id="wheel-stand"></div>
     </div>
     
     <button onclick="spinWheel()" id="spinButton">SPIN!</button>
@@ -117,23 +134,205 @@
         let isSpinning = false;
         let currentAngle = 0;
         
-        function createWheel() {
-            const wheel = document.getElementById('wheel');
-            const sectionAngle = 360 / sections.length;
+        const canvas = document.getElementById('wheel');
+        const ctx = canvas.getContext('2d');
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = Math.min(centerX, centerY) - 10;
+
+        function drawWheel() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const sectionAngle = (2 * Math.PI) / sections.length;
             
-            sections.forEach((section, index) => {
-                const sectionEl = document.createElement('div');
-                sectionEl.className = 'wheel-section';
-                sectionEl.style.backgroundColor = section.color;
-                sectionEl.textContent = section.text;
+            // Draw outer rim with metallic effect
+            const rimGradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            rimGradient.addColorStop(0, '#777');
+            rimGradient.addColorStop(0.5, '#DDD');
+            rimGradient.addColorStop(1, '#555');
+            
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius + 10, 0, 2 * Math.PI);
+            ctx.fillStyle = rimGradient;
+            ctx.fill();
+            
+            // Draw inner rim
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius + 5, 0, 2 * Math.PI);
+            ctx.fillStyle = '#333';
+            ctx.fill();
+            
+            // Draw wheel base with depth
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = '#444';
+            ctx.fill();
+            
+            // Draw main wheel with enhanced 3D effect
+            for (let i = 0; i < sections.length; i++) {
+                // Draw section with 3D gradient
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, 
+                    i * sectionAngle + currentAngle, 
+                    (i + 1) * sectionAngle + currentAngle);
+                ctx.closePath();
                 
-                // Adjust transform for better alignment
-                const angle = sectionAngle * index;
-                sectionEl.style.transform = 
-                    `rotateY(${angle}deg) translateZ(250px) rotateX(2deg)`; // Increased distance, reduced tilt
+                // Create enhanced gradient for 3D effect
+                const gradientAngle = i * sectionAngle + sectionAngle / 2 + currentAngle;
                 
-                wheel.appendChild(sectionEl);
-            });
+                // Create more pronounced 3D gradient
+                const gradient = ctx.createRadialGradient(
+                    centerX, centerY, radius * 0.3,
+                    centerX, centerY, radius
+                );
+                
+                // Get base color and create darker and lighter versions for enhanced 3D effect
+                const baseColor = sections[i].color;
+                const darkerColor = getDarkerColor(baseColor, 70);
+                const lighterColor = getLighterColor(baseColor, 30);
+                
+                gradient.addColorStop(0, lighterColor);
+                gradient.addColorStop(0.7, baseColor);
+                gradient.addColorStop(1, darkerColor);
+                
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                
+                // Add beveled edge effect
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius * 0.98, 
+                    i * sectionAngle + currentAngle, 
+                    (i + 1) * sectionAngle + currentAngle);
+                ctx.closePath();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Draw section border with shadow
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, 
+                    i * sectionAngle + currentAngle, 
+                    (i + 1) * sectionAngle + currentAngle);
+                ctx.closePath();
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Draw text with enhanced 3D shadow
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(i * sectionAngle + sectionAngle / 2 + currentAngle);
+                ctx.textAlign = 'right';
+                
+                // Multiple text shadows for enhanced 3D effect
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.font = 'bold 20px Arial';
+                ctx.fillText(sections[i].text, radius * 0.8 + 3, 8);
+                
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                ctx.fillText(sections[i].text, radius * 0.8 + 2, 7);
+                
+                // Actual text with slight emboss
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 20px Arial';
+                ctx.fillText(sections[i].text, radius * 0.8, 5);
+                
+                // Highlight on text
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.fillText(sections[i].text, radius * 0.8 - 1, 4);
+                
+                ctx.restore();
+            }
+            
+            // Draw center hub with enhanced 3D effect
+            // Outer hub
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 35, 0, 2 * Math.PI);
+            const hubGradient = ctx.createRadialGradient(
+                centerX - 10, centerY - 10, 0,
+                centerX, centerY, 35
+            );
+            hubGradient.addColorStop(0, '#EEE');
+            hubGradient.addColorStop(0.3, '#AAA');
+            hubGradient.addColorStop(1, '#666');
+            ctx.fillStyle = hubGradient;
+            ctx.fill();
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Middle hub
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 25, 0, 2 * Math.PI);
+            const middleHubGradient = ctx.createRadialGradient(
+                centerX - 5, centerY - 5, 0,
+                centerX, centerY, 25
+            );
+            middleHubGradient.addColorStop(0, '#DDD');
+            middleHubGradient.addColorStop(1, '#888');
+            ctx.fillStyle = middleHubGradient;
+            ctx.fill();
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            
+            // Inner hub (center)
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 15, 0, 2 * Math.PI);
+            const innerHubGradient = ctx.createRadialGradient(
+                centerX - 3, centerY - 3, 0,
+                centerX, centerY, 15
+            );
+            innerHubGradient.addColorStop(0, '#999');
+            innerHubGradient.addColorStop(1, '#555');
+            ctx.fillStyle = innerHubGradient;
+            ctx.fill();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            
+            // Add bolt/screw details to center
+            for (let i = 0; i < 6; i++) {
+                const boltAngle = (i / 6) * Math.PI * 2;
+                const boltX = centerX + Math.cos(boltAngle) * 8;
+                const boltY = centerY + Math.sin(boltAngle) * 8;
+                
+                ctx.beginPath();
+                ctx.arc(boltX, boltY, 2, 0, 2 * Math.PI);
+                ctx.fillStyle = '#DDD';
+                ctx.fill();
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+            }
+        }
+
+        // Helper function to create darker color for 3D effect
+        function getDarkerColor(color, amount = 50) {
+            // Parse RGB values
+            const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+            if (rgbMatch) {
+                const r = Math.max(0, parseInt(rgbMatch[1]) - amount);
+                const g = Math.max(0, parseInt(rgbMatch[2]) - amount);
+                const b = Math.max(0, parseInt(rgbMatch[3]) - amount);
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+            return color; // Return original if parsing fails
+        }
+        
+        // Helper function to create lighter color for 3D effect
+        function getLighterColor(color, amount = 30) {
+            // Parse RGB values
+            const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+            if (rgbMatch) {
+                const r = Math.min(255, parseInt(rgbMatch[1]) + amount);
+                const g = Math.min(255, parseInt(rgbMatch[2]) + amount);
+                const b = Math.min(255, parseInt(rgbMatch[3]) + amount);
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+            return color; // Return original if parsing fails
         }
 
         function spinWheel() {
@@ -146,7 +345,9 @@
             const targetAngle = currentAngle + (spins * 360);
             const duration = 3000;
             const startTime = Date.now();
-            const startAngle = currentAngle;
+            
+            // Enhanced 3D tilt effect during spin
+            canvas.style.transform = 'rotateX(20deg) rotateY(5deg)';
             
             function animate() {
                 const elapsed = Date.now() - startTime;
@@ -154,20 +355,28 @@
                 
                 if (progress < 1) {
                     const easeOut = 1 - Math.pow(1 - progress, 3);
-                    currentAngle = startAngle + (targetAngle - startAngle) * easeOut;
-                    document.getElementById('wheel').style.transform = 
-                        `rotateY(${currentAngle}deg)`;
+                    currentAngle = startAngle + (spinAngle * easeOut);
+                    
+                    // Enhanced wobble effect during spin
+                    const wobbleX = Math.sin(progress * 20) * (1 - progress) * 5;
+                    const wobbleY = Math.cos(progress * 15) * (1 - progress) * 3;
+                    canvas.style.transform = `rotateX(${20 + wobbleX}deg) rotateY(${5 + wobbleY}deg)`;
+                    
+                    drawWheel();
                     requestAnimationFrame(animate);
                 } else {
                     isSpinning = false;
                     document.getElementById('spinButton').disabled = false;
                     
-                    // Adjusted section detection for red triangle pointer
-                    const finalAngle = (currentAngle % 360 + 360) % 360;
-                    const sectionAngle = 360 / sections.length;
-                    // Calculate index based on the red triangle position
-                    const sectionIndex = (Math.floor((finalAngle + sectionAngle/2) / sectionAngle)) % sections.length;
-                    const result = sections[sectionIndex];
+                    // Reset tilt to static 3D position
+                    canvas.style.transform = 'rotateX(20deg) rotateY(5deg)';
+                    
+                    // Fixed section detection for pointer position
+                    const sectionAngle = (2 * Math.PI) / sections.length;
+                    let angle = (-currentAngle - Math.PI/2) % (2 * Math.PI);
+                    if (angle < 0) angle += 2 * Math.PI;
+                    const index = Math.floor(angle / sectionAngle);
+                    const result = sections[index];
                     
                     console.log('Angle:', finalAngle, 'Index:', sectionIndex, 'Section:', result.text);
                     
@@ -194,8 +403,9 @@
             document.getElementById('wheel').style.transform = 'rotateY(0deg)';
         }
 
-        // Initialize wheel
-        createWheel();
+        // Initial setup with enhanced 3D tilt
+        canvas.style.transform = 'rotateX(20deg) rotateY(5deg)';
+        drawWheel();
     </script>
 </body>
 </html> 
