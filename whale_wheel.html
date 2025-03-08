@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Whale Wheel</title>
+    <title>3D Whale Wheel</title>
     <style>
         body {
             display: flex;
@@ -23,11 +23,32 @@
             position: relative;
             width: 400px;
             height: 400px;
+            perspective: 1000px; /* Add 3D perspective */
         }
         
         #wheel {
             width: 100%;
             height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.1s;
+        }
+        
+        .wheel-section {
+            position: absolute;
+            width: 120px;  /* Made sections even narrower */
+            height: 200px;
+            left: 140px;   /* Centered based on new width */
+            top: 100px;
+            transform-origin: 50% 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            font-weight: bold;
+            backface-visibility: hidden;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
         }
         
         #pointer {
@@ -75,15 +96,15 @@
     
     <div id="wheel-container">
         <div id="pointer"></div>
-        <canvas id="wheel" width="400" height="400"></canvas>
+        <div id="wheel"></div>
     </div>
     
-    <button onclick="spinWheel()" id="spinButton">Click to spin the wheel!</button>
+    <button onclick="spinWheel()" id="spinButton">SPIN!</button>
     <button id="reset-button" onclick="resetGame()">Reset Game</button>
 
     <script>
         const sections = [
-            { text: "$1000", color: "rgb(255, 0, 255)" },   // Top
+            { text: "$1000", color: "rgb(255, 0, 255)" },
             { text: "LOSE TURN", color: "rgb(139, 0, 0)" },
             { text: "BANKRUPT", color: "rgb(255, 0, 0)" },
             { text: "$100", color: "rgb(255, 255, 0)" },
@@ -96,47 +117,23 @@
         let isSpinning = false;
         let currentAngle = 0;
         
-        const canvas = document.getElementById('wheel');
-        const ctx = canvas.getContext('2d');
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-        const radius = Math.min(centerX, centerY) - 10;
-
-        function drawWheel() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            const sectionAngle = (2 * Math.PI) / sections.length;
+        function createWheel() {
+            const wheel = document.getElementById('wheel');
+            const sectionAngle = 360 / sections.length;
             
-            for (let i = 0; i < sections.length; i++) {
-                // Draw section
-                ctx.beginPath();
-                ctx.moveTo(centerX, centerY);
-                ctx.arc(centerX, centerY, radius, 
-                    i * sectionAngle + currentAngle, 
-                    (i + 1) * sectionAngle + currentAngle);
-                ctx.closePath();
-                ctx.fillStyle = sections[i].color;
-                ctx.fill();
-                ctx.strokeStyle = 'white';
-                ctx.stroke();
+            sections.forEach((section, index) => {
+                const sectionEl = document.createElement('div');
+                sectionEl.className = 'wheel-section';
+                sectionEl.style.backgroundColor = section.color;
+                sectionEl.textContent = section.text;
                 
-                // Draw text
-                ctx.save();
-                ctx.translate(centerX, centerY);
-                ctx.rotate(i * sectionAngle + sectionAngle / 2 + currentAngle);
-                ctx.textAlign = 'right';
-                ctx.fillStyle = 'white';
-                ctx.font = 'bold 20px Arial';
-                ctx.fillText(sections[i].text, radius * 0.8, 5);
-                ctx.restore();
-            }
-            
-            // Draw center circle
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, 15, 0, 2 * Math.PI);
-            ctx.fillStyle = 'white';
-            ctx.fill();
-            ctx.strokeStyle = 'black';
-            ctx.stroke();
+                // Adjust transform for better alignment
+                const angle = sectionAngle * index;
+                sectionEl.style.transform = 
+                    `rotateY(${angle}deg) translateZ(250px) rotateX(2deg)`; // Increased distance, reduced tilt
+                
+                wheel.appendChild(sectionEl);
+            });
         }
 
         function spinWheel() {
@@ -145,10 +142,11 @@
             isSpinning = true;
             document.getElementById('spinButton').disabled = true;
             
-            const spinAngle = 2 * Math.PI * (5 + Math.random() * 5);
-            const startAngle = currentAngle;
+            const spins = 5 + Math.random() * 5;
+            const targetAngle = currentAngle + (spins * 360);
             const duration = 3000;
             const startTime = Date.now();
+            const startAngle = currentAngle;
             
             function animate() {
                 const elapsed = Date.now() - startTime;
@@ -156,41 +154,33 @@
                 
                 if (progress < 1) {
                     const easeOut = 1 - Math.pow(1 - progress, 3);
-                    currentAngle = startAngle + (spinAngle * easeOut);
-                    drawWheel();
+                    currentAngle = startAngle + (targetAngle - startAngle) * easeOut;
+                    document.getElementById('wheel').style.transform = 
+                        `rotateY(${currentAngle}deg)`;
                     requestAnimationFrame(animate);
                 } else {
                     isSpinning = false;
                     document.getElementById('spinButton').disabled = false;
                     
-                    // Fixed section detection for pointer position
-                    const sectionAngle = (2 * Math.PI) / sections.length;
-                    let angle = (-currentAngle - Math.PI/2) % (2 * Math.PI);  // Changed to -Math.PI/2
-                    if (angle < 0) angle += 2 * Math.PI;
-                    const index = Math.floor(angle / sectionAngle);
-                    const result = sections[index];
+                    // Adjusted section detection for red triangle pointer
+                    const finalAngle = (currentAngle % 360 + 360) % 360;
+                    const sectionAngle = 360 / sections.length;
+                    // Calculate index based on the red triangle position
+                    const sectionIndex = (Math.floor((finalAngle + sectionAngle/2) / sectionAngle)) % sections.length;
+                    const result = sections[sectionIndex];
                     
-                    // Debug logging
-                    console.log('Final angle:', angle * 180 / Math.PI);
-                    console.log('Section index:', index);
-                    console.log('Value at pointer:', result.text);
+                    console.log('Angle:', finalAngle, 'Index:', sectionIndex, 'Section:', result.text);
                     
-                    // Score update logic
+                    // Update score
                     if (result.text === "BANKRUPT") {
                         score = 0;
-                    } else if (result.text === "LOSE TURN") {
-                        // Keep current score
-                        console.log('Lost turn, keeping score at:', score);
-                    } else {
-                        // Add new value to existing score
+                    } else if (result.text !== "LOSE TURN") {
                         const newValue = parseInt(result.text.replace("$", ""));
                         score += newValue;
-                        console.log('Adding:', newValue, 'New total:', score);
+                        console.log('Adding:', newValue, 'Total:', score);
                     }
                     
-                    // Update score display
                     document.getElementById('score').textContent = `$${score}`;
-                    drawWheel();
                 }
             }
             
@@ -201,12 +191,11 @@
             score = 0;
             document.getElementById('score').textContent = '$0';
             currentAngle = 0;
-            drawWheel();
-            console.log('Game reset');
+            document.getElementById('wheel').style.transform = 'rotateY(0deg)';
         }
 
-        // Initial draw
-        drawWheel();
+        // Initialize wheel
+        createWheel();
     </script>
 </body>
 </html> 
