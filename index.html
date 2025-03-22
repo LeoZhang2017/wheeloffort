@@ -7,22 +7,36 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             font-family: Arial, sans-serif;
             background-color: white;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
         }
         
         #scoreboard {
             border: 2px solid black;
-            padding: 10px;
-            margin: 20px;
-            width: 150px;
-            text-align: left;
+            padding: 15px;
+            margin: 20px auto;
+            width: 200px;
+            text-align: center;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        #score {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 5px;
         }
         
         #wheel-container {
             position: relative;
             width: 400px;
             height: 400px;
+            margin: 20px auto;
         }
         
         #wheel {
@@ -42,11 +56,21 @@
             border-top: 30px solid red;
         }
         
-        button {
-            margin: 20px;
-            padding: 10px 20px;
-            font-size: 16px;
+        #spinButton {
+            margin: 20px auto;
+            padding: 15px 30px;
+            font-size: 18px;
             cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            display: block;
+            transition: background-color 0.3s;
+        }
+
+        #spinButton:hover {
+            background-color: #45a049;
         }
 
         #reset-button {
@@ -65,21 +89,81 @@
         #reset-button:hover {
             background-color: #cc0000;
         }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .modal-content h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .modal-content p {
+            margin-bottom: 20px;
+        }
+
+        .pay-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 14px 20px;
+            margin: 8px 0;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .pay-button:hover {
+            background-color: #45a049;
+        }
+
+        #game-container {
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <div id="scoreboard">
-        <div>SCORE:</div>
-        <div id="score">$0</div>
+    <div id="payModal" class="modal">
+        <div class="modal-content">
+            <h2>Welcome to Whale Wheel!</h2>
+            <p>To play this exciting game, please pay $1</p>
+            <button class="pay-button" onclick="handlePayment()">Pay $1 to Play</button>
+        </div>
     </div>
-    
-    <div id="wheel-container">
-        <div id="pointer"></div>
-        <canvas id="wheel" width="400" height="400"></canvas>
+
+    <div id="game-container">
+        <div id="scoreboard">
+            <div>SCORE:</div>
+            <div id="score">$0</div>
+        </div>
+        
+        <div id="wheel-container">
+            <div id="pointer"></div>
+            <canvas id="wheel" width="400" height="400"></canvas>
+        </div>
+        
+        <button onclick="spinWheel()" id="spinButton">Click to spin the wheel!</button>
+        <button id="reset-button" onclick="resetGame()">Reset Game</button>
     </div>
-    
-    <button onclick="spinWheel()" id="spinButton">Click to spin the wheel!</button>
-    <button id="reset-button" onclick="resetGame()">Reset Game</button>
 
     <script>
         const sections = [
@@ -207,6 +291,25 @@
 
         // Initial draw
         drawWheel();
+
+        // Payment and game initialization logic
+        window.onload = function() {
+            const modal = document.getElementById('payModal');
+            const gameContainer = document.getElementById('game-container');
+            modal.style.display = "block";
+            gameContainer.style.display = "none";
+        }
+
+        function handlePayment() {
+            // Here you would typically integrate with a payment processor
+            // For now, we'll just simulate a successful payment
+            const modal = document.getElementById('payModal');
+            const gameContainer = document.getElementById('game-container');
+            
+            modal.style.display = "none";
+            gameContainer.style.display = "block";
+            resetGame(); // Start with a fresh game
+        }
     </script>
 </body>
 </html> 
